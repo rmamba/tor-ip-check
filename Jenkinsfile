@@ -60,7 +60,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'rmamba_docker_io',
                                                 usernameVariable: 'DH_USER',
                                                 passwordVariable: 'DH_TOKEN')]) {
-                    sh """
+                    sh '''
                         set -e
                         export DOCKER_CONFIG=$(mktemp -d)        # isolated, no stale helper/cache
                         echo $DH_TOKEN | docker login -u $DH_USER --password-stdin
@@ -70,7 +70,7 @@ pipeline {
                         docker rmi rmamba/tor-ip-check:latest
                         docker logout
                         rm -rf "$DOCKER_CONFIG"
-                    """
+                    '''
                 }
             }
         }
