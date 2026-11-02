@@ -74,20 +74,6 @@ pipeline {
                 }
             }
         }
-        stage('Docker:logout') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'rmamba_docker_io',
-                                                usernameVariable: 'DH_USER',
-                                                passwordVariable: 'DH_TOKEN')]) {
-                sh '''
-                    set -e
-                    export DOCKER_CONFIG=$(mktemp -d)        # isolated, no stale helper/cache
-                    docker logout
-                    rm -rf "$DOCKER_CONFIG"
-                '''
-                }
-            }
-        }
         stage('Push to production') {
             steps {
                 echo 'Skipped...'
