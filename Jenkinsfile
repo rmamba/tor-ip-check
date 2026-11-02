@@ -20,7 +20,7 @@ pipeline {
         }
         stage('Docker Build') {
             steps {
-                sh "docker build --build-arg debug_mode=--no-dev -t rmamba/tor-privoxy:latest ."
+                sh "docker build --build-arg debug_mode=--no-dev -t rmamba/tor-ip-check:latest ."
             }
         }
         stage('E2E Test (local)') {
@@ -30,7 +30,7 @@ pipeline {
         }
         stage('Docker:latest') {
             steps {
-                sh "docker push rmamba/tor-privoxy:latest"
+                sh "docker push rmamba/tor-ip-check:latest"
             }
         }
         stage('Push to stage') {
@@ -46,10 +46,10 @@ pipeline {
         }
         stage('Docker:tag') {
             steps {
-                sh "docker tag rmamba/tor-privoxy:latest rmamba/tor-privoxy:${params.gitLabel}"
-                sh "docker push rmamba/tor-privoxy:${params.gitLabel}"
-                sh "docker rmi rmamba/tor-privoxy:${params.gitLabel}"
-                sh "docker rmi rmamba/tor-privoxy:latest"
+                sh "docker tag rmamba/tor-ip-check:latest rmamba/tor-ip-check:${params.gitLabel}"
+                sh "docker push rmamba/tor-ip-check:${params.gitLabel}"
+                sh "docker rmi rmamba/tor-ip-check:${params.gitLabel}"
+                sh "docker rmi rmamba/tor-ip-check:latest"
             }
         }
         stage('Push to production') {

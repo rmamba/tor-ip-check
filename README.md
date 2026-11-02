@@ -1,114 +1,99 @@
-# tor-privoxy [![GitHub Workflow Status (branch)](https://img.shields.io/github/actions/workflow/status/rmamba/tor-privoxy-ip-check/ci.yaml?branch=main)](https://github.com/rmamba/tor-privoxy-ip-check/actions/workflows/ci.yaml) [![Docker Pulls](https://badgen.net/docker/pulls/rmamba/tor-privoxy?icon=docker&label=pulls)](https://hub.docker.com/r/rmamba/tor-privoxy/) [![Docker Stars](https://badgen.net/docker/stars/rmamba/tor-privoxy?icon=docker&label=stars)](https://hub.docker.com/r/rmamba/tor-privoxy/)
+<h1 align="center">Upgrade of Tor for Docker image with IP check build in<br />
+<div align="center">
+<a href="https://github.com/dockur/tor"><img src="https://raw.githubusercontent.com/dockur/tor/master/.github/logo.png" title="Logo" style="max-width:100%;" width="128" /></a>
+</div>
+<div align="center">
 
-This image combines Tor and Privoxy services to prepare proxy connection for http and shell.
-It also includes simple go program to test any URL if the IP is masked, that way an automatic redeploy 
-can be created in k8s clusters.
+[![Build]][build_url]
+[![Version]][tag_url]
+[![Size]][tag_url]
+[![Package]][pkg_url]
+[![Pulls]][hub_url]
 
-## Contributing
+</div></h1>
 
-If you find this image useful here's how you can help:
+Docker container of the [Tor](https://www.torproject.org/) network proxy daemon.
 
-- Send a pull request with your awesome features and bug fixes
-- Help users resolve their [issues](../../issues?q=is%3Aopen+is%3Aissue).
+## Features ✨
 
-## Issues
+- Provides SOCKSv5 and HTTPS proxy access.
+- Supports relay, exit node, bridge, and hidden service modes through custom configuration.
+- Includes an extensive healthcheck, plus monitoring via [Nyx](https://nyx.torproject.org/) and pluggable transport support via Lyrebird.
+- Lightweight Alpine-based image.
 
-Before reporting your issue please try updating Docker to the latest version and check if it resolves the issue. Refer to the Docker [installation guide](https://docs.docker.com/installation) for instructions.
+## Usage 🐳
 
-SELinux users should try disabling SELinux using the command `setenforce 0` to see if it resolves the issue.
+##### Docker Compose:
 
-If the above recommendations do not help then [report your issue](../../issues/new) along with the following information:
-
-- Output of the `docker vers6` and `docker info` commands
-- The `docker run` command or `docker-compose.yml` used to start the image. Mask out the sensitive bits.
-- Please state if you are using [Boot2Docker](http://www.boot2docker.io), [VirtualBox](https://www.virtualbox.org), etc.
-
-# Getting started
-
-## Installation
-
-Automated builds of the image are available on [Dockerhub](https://hub.docker.com/r/rmamba/tor-privoxy-ip-check) and is the recommended method of installation.
-
-```bash
-docker pull rmamba/tor-privoxy
+```yaml
+services:
+  tor:
+    image: dockurr/tor
+    container_name: tor
+    ports:
+      - 9050:9050
+      - 8118:8118
+    restart: always
 ```
 
-Alternatively you can build the image yourself.
+##### Docker CLI:
 
-```bash
-docker build -t rmamba/tor-privoxy https://github.com/rmamba/tor-privoxy-ip-check.git#main
+```shell
+docker run -it --rm --name tor -p 9050:9050 -p 8118:8118 docker.io/dockurr/tor
 ```
 
+The SOCKSv5 proxy is available on port `9050`, and the HTTPS proxy is available on port `8118`.
 
-# Quick Start
+## Configuration 🔧
 
-The quickest way to get started is using [docker-compose](https://docs.docker.com/compose/).
+**Environment variables:**
 
-```bash
-wget https://raw.githubusercontent.com/rmamba/tor-privoxy-ip-check/master/docker-compose.yml
-docker-compose up
+- `PASSWORD` - Password for the Tor control port (default: "password")
+  - Only used inside the container by the healthcheck. Change it if you plan to expose the control port (9051).
+
+- `CHECK` - Enable external health checks (default: "false")
+  - Set to "true" to also monitor the node status via external services like [https://check.torproject.org/](https://check.torproject.org/) and [Onionoo](https://onionoo.torproject.org).
+
+- `DEBUG` - Enable debug output (default: "false")
+  - Shows raw Tor Control Protocol responses.
+
+**Advanced configuration:**
+
+You can provide a custom Tor configuration file to the container via a `torrc` file in `/etc/tor`, with your own relay, exit node, bridge, or hidden service settings.
+
+Mount the following directories in your compose file:
+
+```yaml
+volumes:
+  - ./config:/etc/tor
+  - ./data:/var/lib/tor
 ```
 
-Or if you want multiple instances:
-```bash
-docker-compose up -d --scale app=5
+and place the custom `torrc` file in your `./config` directory, for example:
+
+```torrc
+# Your relay configuration
+Nickname MyTorRelay
+ContactInfo your@email.com
+ORPort 9001
+DirPort 9030
+ExitRelay 0
+ExitPolicy reject *:*
 ```
 
-Alternately, you can manually launch the `tor-privoxy` container.
+The `/var/lib/tor` directory contains Tor state and identity data. Persisting it is optional for simple proxy usage, but strongly recommended for relays and bridges because it preserves the relay identity and fingerprint.
 
-```bash
-docker run --name='tor-privoxy' -d \
-  -p 9050:9050 \
-  -p 9051:9051 \
-  -p 8118:8118 \
-rmamba/tor-privoxy:latest
-```
+## Stars 🌟
 
-The exposed ports are:
-* <code>9050</code>: Tor proxy (SOCKS5)
-* <code>9051</code>: Tor control port
-* <code>8118</code>: Privoxy (HTTP Proxy)
+[![Stargazers](https://raw.githubusercontent.com/star-stats/stars/refs/heads/data/charts/dockur-tor.svg)](https://github.com/dockur/tor/stargazers)
 
-You can extend <code>torrc</code> configuration by placing configuration file in <code>/etc/torrc.d</code>.
-You must use <code>.conf</code> extension to be include in torrc configuration.
+[build_url]: https://github.com/dockur/tor/
+[hub_url]: https://hub.docker.com/r/dockurr/tor/
+[tag_url]: https://hub.docker.com/r/dockurr/tor/tags
+[pkg_url]: https://github.com/dockur/tor/pkgs/container/tor
 
-# Maintenance
-
-## Upgrading
-
-To upgrade to newer releases:
-
-- **Step 1**: Download the updated Docker image:
-```bash
-docker pull rmamba/tor-privoxy-ip-check
-```
-
-- **Step 2**: Stop the currently running image:
-```bash
-docker stop tor-privoxy
-```
-
-- **Step 3**: Remove the stopped container
-```bash
-docker rm -v tor-privoxy
-```
-
-- **Step 4**: Start the updated image
-```bash
-docker run --name tor-privoxy -d \
-[OPTIONS] \
-rmamba/tor-privoxy:latest
-```
-
-## Shell Access
-
-For debugging and maintenance purposes you may want access the containers shell. If you are using Docker version `1.3.0` or higher you can access a running containers shell by starting `bash` using `docker exec`:
-
-```bash
-docker exec -it tor-privoxy sh
-```
-
-## Quick reference
-* GitHub repo: [rmamba/tor-privoxy-ip-check](https://github.com/rmamba/tor-privoxy-ip-check)
-* Where to file issues: [GitHub issues](https://github.com/rmamba/tor-privoxy-ip-check/issues)
-* License(s) - [license](https://github.com/rmamba/tor-privoxy-ip-check/blob/main/LICENSE), check 3rd party documentation for license information
+[Build]: https://github.com/dockur/tor/actions/workflows/build.yml/badge.svg
+[Size]: https://img.shields.io/docker/image-size/dockurr/tor/latest?color=066da5&label=size
+[Pulls]: https://img.shields.io/docker/pulls/dockurr/tor.svg?style=flat&label=pulls&logo=docker
+[Version]: https://img.shields.io/docker/v/dockurr/tor/latest?arch=amd64&sort=semver&color=066da5
+[Package]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fipitio.github.io%2Fbackage%2Fdockur%2Ftor%2Ftor.json&query=%24.downloads&logo=github&style=flat&color=066da5&label=pulls

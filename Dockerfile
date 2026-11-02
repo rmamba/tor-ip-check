@@ -14,7 +14,7 @@ RUN go mod download
 RUN CGO_ENABLED=0 go build -o testIP
 
 # Specifies a parent image
-FROM lusky3/privoxy:latest
+FROM dockurr/tor:latest
 
 # Copy application
 COPY --from=build /app/testIP /tmp/testIP
