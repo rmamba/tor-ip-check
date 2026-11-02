@@ -7,6 +7,7 @@ pipeline {
             versionNumberString: "${params.gitLabel}",
             worstResultForIncrement: 'SUCCESS'
         ])
+        DOCKER_PAT = credentials('pat-rmamba-docker-io')
     }
 
     stages {
@@ -26,6 +27,15 @@ pipeline {
         stage('E2E Test (local)') {
             steps {
                 echo 'Skipped...'
+            }
+        }
+        stage('Docker:login') {
+            steps {
+                sh '''
+                    set -e
+                    export DOCKER_CONFIG=$(mktemp -d)        # isolated, no stale helper/cache
+                    echo "$DOCKER_PAT" | docker login -u rmamba --password-stdin
+                '''
             }
         }
         stage('Docker:latest') {
@@ -50,6 +60,20 @@ pipeline {
                 sh "docker push rmamba/tor-ip-check:${params.gitLabel}"
                 sh "docker rmi rmamba/tor-ip-check:${params.gitLabel}"
                 sh "docker rmi rmamba/tor-ip-check:latest"
+            }
+        }
+        stage('Docker:logout') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-rmamba',
+                                                usernameVariable: 'DH_USER',
+                                                passwordVariable: 'DH_TOKEN')]) {
+                sh '''
+                    set -e
+                    export DOCKER_CONFIG=$(mktemp -d)        # isolated, no stale helper/cache
+                    docker logout
+                    rm -rf "$DOCKER_CONFIG"
+                '''
+                }
             }
         }
         stage('Push to production') {
