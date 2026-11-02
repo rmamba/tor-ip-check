@@ -7,7 +7,6 @@ pipeline {
             versionNumberString: "${params.gitLabel}",
             worstResultForIncrement: 'SUCCESS'
         ])
-        DOCKER_PAT = credentials('pat-rmamba-docker-io')
     }
 
     stages {
@@ -31,11 +30,15 @@ pipeline {
         }
         stage('Docker:login') {
             steps {
-                sh '''
-                    set -e
-                    export DOCKER_CONFIG=$(mktemp -d)        # isolated, no stale helper/cache
-                    echo "$DOCKER_PAT" | docker login -u rmamba --password-stdin
-                '''
+                withCredentials([usernamePassword(credentialsId: 'rmamba_docker_io',
+                                                usernameVariable: 'DH_USER',
+                                                passwordVariable: 'DH_TOKEN')]) {
+                    sh '''
+                        set -e
+                        export DOCKER_CONFIG=$(mktemp -d)        # isolated, no stale helper/cache
+                        echo "$DH_TOKEN" | docker login -u $DH_USER --password-stdin
+                    '''
+                }
             }
         }
         stage('Docker:latest') {
@@ -64,7 +67,7 @@ pipeline {
         }
         stage('Docker:logout') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-rmamba',
+                withCredentials([usernamePassword(credentialsId: 'rmamba_docker_io',
                                                 usernameVariable: 'DH_USER',
                                                 passwordVariable: 'DH_TOKEN')]) {
                 sh '''
