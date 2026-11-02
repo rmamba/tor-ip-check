@@ -28,7 +28,7 @@ pipeline {
                 echo 'Skipped...'
             }
         }
-        stage('Docker:login') {
+        stage('Docker:latest') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'rmamba_docker_io',
                                                 usernameVariable: 'DH_USER',
@@ -37,13 +37,11 @@ pipeline {
                         set -e
                         export DOCKER_CONFIG=$(mktemp -d)        # isolated, no stale helper/cache
                         echo "$DH_TOKEN" | docker login -u $DH_USER --password-stdin
+                        docker push rmamba/tor-ip-check:latest
+                        docker logout
+                        rm -rf "$DOCKER_CONFIG"
                     '''
                 }
-            }
-        }
-        stage('Docker:latest') {
-            steps {
-                sh "docker push rmamba/tor-ip-check:latest"
             }
         }
         stage('Push to stage') {
@@ -59,10 +57,21 @@ pipeline {
         }
         stage('Docker:tag') {
             steps {
-                sh "docker tag rmamba/tor-ip-check:latest rmamba/tor-ip-check:${params.gitLabel}"
-                sh "docker push rmamba/tor-ip-check:${params.gitLabel}"
-                sh "docker rmi rmamba/tor-ip-check:${params.gitLabel}"
-                sh "docker rmi rmamba/tor-ip-check:latest"
+                withCredentials([usernamePassword(credentialsId: 'rmamba_docker_io',
+                                                usernameVariable: 'DH_USER',
+                                                passwordVariable: 'DH_TOKEN')]) {
+                    sh """
+                        set -e
+                        export DOCKER_CONFIG=$(mktemp -d)        # isolated, no stale helper/cache
+                        echo $DH_TOKEN | docker login -u $DH_USER --password-stdin
+                        docker tag rmamba/tor-ip-check:latest rmamba/tor-ip-check:${params.gitLabel}
+                        docker push rmamba/tor-ip-check:${params.gitLabel}
+                        docker rmi rmamba/tor-ip-check:${params.gitLabel}
+                        docker rmi rmamba/tor-ip-check:latest
+                        docker logout
+                        rm -rf "$DOCKER_CONFIG"
+                    """
+                }
             }
         }
         stage('Docker:logout') {
